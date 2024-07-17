@@ -6,7 +6,7 @@
 # |_________| |_________| |_________|
 #     |||         |||         |||
 # -----------------------------------
-#        ifspeedtest.sh v.2.03
+#        ifspeedtest.sh v.2.04
 # -----------------------------------
 
 # Network testing script for running mtr and iperf3 tests
@@ -363,7 +363,7 @@ run_tests_for_ip() {
   local ip_or_domain=$1
   local ip=$(validate_ip_domain "$ip_or_domain")
   local iface=$2
-  local iface_display=${iface:-default}
+  local iface_display=${iface:-"$(ip route | grep default | awk '{print $5}' | head -n 1)"}
   local avg hops upload_speed_avg download_speed_avg
   
   if [ -z "$MTR" ] && [ -z "$IPERF3" ]; then
