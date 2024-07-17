@@ -6,7 +6,7 @@
 # |_________| |_________| |_________|
 #     |||         |||         |||
 # -----------------------------------
-#        ifspeedtest.sh v.2.02
+#        ifspeedtest.sh v.2.03
 # -----------------------------------
 
 # Network testing script for running mtr and iperf3 tests
@@ -381,7 +381,7 @@ run_tests_for_ip() {
   
   echo ""
   printf "${GREEN}===============================================================================================\n${NC}"
-  printf "${GREEN}IP:${NC}     %s ${GREEN}| Int:${NC} %s\n" "$ip" "$iface_display"
+  printf "${GREEN}Host:${NC}   ${GREEN}%s =>${NC} %s\n" "$iface_display" "$ip"
   if [ "$IPERF3" = true ]; then
     printf "${GREEN}Speed:${NC}  ${GREEN}Upload:${NC} %s ${GREEN}| Download:${NC} %s ${GREEN}| For${NC} %d sec ${GREEN}with${NC} %d ${GREEN}parallel streams${NC}\n" "$upload_speed" "$download_speed" "$IPERF3_TIME" "$IPERF3_PARALLEL"
   fi
