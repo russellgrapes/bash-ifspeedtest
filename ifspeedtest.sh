@@ -66,6 +66,7 @@ show_help() {
   local main_iface=$(ip route | grep default | awk '{print $5}')
   echo "
 Usage: $0 [options]
+
 Options:
   -i, --ip <IP>          Specifies the IP to test.
   --ips <file>           Specifies the file with IPs to test.
