@@ -1,4 +1,3 @@
-
 ![alt network-testing-bash-script](https://github.com/russellgrapes/bash-ifspeedtest/blob/main/placeholder.png)
 
 # Network Testing Bash Script
@@ -39,6 +38,18 @@ Global Variables:
 ```bash
 ./ifspeedtest.sh -i 10.1.1.1
 ./ifspeedtest.sh --ips ips.ini --mtr 30 --iperf3 30 --log /home/logs/ -I eth0
+```
+
+### ips.ini File
+
+The `ips.ini` file should contain a list of IP addresses, each on a new line. The script will run tests on each IP listed in this file.
+
+Example `ips.ini` file:
+
+```bash
+10.1.1.1
+10.1.1.2
+10.1.1.3
 ```
 
 ## Configuration
