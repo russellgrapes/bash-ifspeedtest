@@ -6,7 +6,7 @@
 # |_________| |_________| |_________|
 #     |||         |||         |||
 # -----------------------------------
-#        ifspeedtest.sh v.2.01
+#        ifspeedtest.sh v.2.02
 # -----------------------------------
 
 # Network testing script for running mtr and iperf3 tests
@@ -168,6 +168,39 @@ check_tools() {
   done
 }
 
+# Function to validate IP or domain and resolve domain to IP
+validate_ip_domain() {
+  local input=$1
+
+  # Check if input is a valid IPv4 address
+  if [[ $input =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
+    # Validate each octet
+    for octet in $(echo $input | tr "." " "); do
+      if ((octet < 0 || octet > 255)); then
+        echo "Error: Invalid IP address: $input"
+        exit 1
+      fi
+    done
+    echo "$input"
+    return 0
+  fi
+
+  # Check if input is a valid domain name
+  if [[ $input =~ ^(([a-zA-Z0-9](-*[a-zA-Z0-9])*)\.)+[a-zA-Z]{2,}$ ]]; then
+    # Resolve domain to IP
+    resolved_ip=$(dig +short $input | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1)
+    if [[ -z $resolved_ip ]]; then
+      echo "Error: Unable to resolve domain to IP: $input"
+      exit 1
+    fi
+    echo "$resolved_ip"
+    return 0
+  fi
+
+  echo "Error: Invalid IP or domain: $input"
+  exit 1
+}
+
 # Function to show progress spinner with a message
 show_spinner() {
   local pid=$1
@@ -323,9 +356,11 @@ run_iperf3() {
   rm -f iperf3_output.txt iperf3_download_output.txt
 }
 
+
 # Function to run tests for a single IP
 run_tests_for_ip() {
-  local ip=$1
+  local ip_or_domain=$1
+  local ip=$(validate_ip_domain "$ip_or_domain")
   local iface=$2
   local iface_display=${iface:-default}
   local avg hops upload_speed_avg download_speed_avg
@@ -386,12 +421,14 @@ process_ips_from_file() {
   local file=$1
   local ip_regex='^([0-9]{1,3}\.){3}[0-9]{1,3}$'
   
-  while IFS= read -r ip; do
-    # Skip empty lines and invalid IPs
-    if [[ -z "$ip" || ! "$ip" =~ $ip_regex ]]; then
+  while IFS= read -r ip_or_domain; do
+    # Skip empty lines
+    if [[ -z "$ip_or_domain" ]]; then
       continue
     fi
     
+    # Validate and resolve IP/domain
+    ip=$(validate_ip_domain "$ip_or_domain")
     run_tests_for_ip $ip $INTERFACE
   done < "$file"
   
@@ -482,7 +519,6 @@ if [ -n "$IP" ] || [ -n "$IPS_FILE" ]; then
   fi
 fi
 
-
 # Check for required tools
 check_tools
 
@@ -497,18 +533,28 @@ echo ""
 
 # Check if testing a single IP or multiple IPs from a file
 if [ -n "$IP" ]; then
-  echo "Tests for IP: $IP"
+  ip=$(validate_ip_domain "$IP")
+  if [[ $? -ne 0 ]]; then
+    echo "$ip"
+    exit 1
+  fi
+  echo "Tests for IP: $ip"
 elif [ -n "$IPS_FILE" ]; then
   if [ ! -f "$IPS_FILE" ]; then
     echo "Error: IPs file '$IPS_FILE' not found."
     exit 1
   fi
   echo "Tests for IPs:"
-  ip_regex='^([0-9]{1,3}\.){3}[0-9]{1,3}$'
-  while IFS= read -r ip; do
-    # Skip empty lines and invalid IPs
-    if [[ -z "$ip" || ! "$ip" =~ $ip_regex ]]; then
+  while IFS= read -r ip_or_domain; do
+    # Skip empty lines
+    if [[ -z "$ip_or_domain" ]]; then
       continue
+    fi
+    # Validate and resolve IP/domain
+    ip=$(validate_ip_domain "$ip_or_domain")
+    if [[ $? -ne 0 ]]; then
+      echo "$ip"
+      exit 1
     fi
     echo "  - $ip"
   done < "$IPS_FILE"
@@ -517,7 +563,7 @@ fi
 
 # Run tests
 if [ -n "$IP" ]; then
-  run_tests_for_ip $IP $INTERFACE
+  run_tests_for_ip $ip $INTERFACE
 elif [ -n "$IPS_FILE" ]; then
   if [ ! -f "$IPS_FILE" ]; then
     echo "Error: IPs file '$IPS_FILE' not found."
