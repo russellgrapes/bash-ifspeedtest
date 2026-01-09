@@ -1,12 +1,18 @@
 # Network Testing Bash Script
-## ifspeedtest.sh — link quality + throughput tester (iperf3 + mtr)
+### ifspeedtest.sh — link quality + throughput tester (iperf3 + mtr)
 
-A cross-platform (portable) `/bin/sh` script to compare **real-world network quality**, not just raw “speed”.  
-It runs **iperf3** (upload + download) and **mtr** (latency/loss/jitter/hops), then prints per-target results plus a **Scorecard** so you can quickly pick the best route/egress/target.
+A portable CLI tool for real-world network testing—measures both **throughput** and **connection quality** (latency/loss/jitter/route), not just a single “speed” number. It fully automates data collection and prints a simple, human-readable summary.
 
-Works on **macOS**, **Linux**, **OpenWrt**, and most Unix-like systems with the required tools installed.
+It has two goals:
+
+1. **Measure your machine’s link end-to-end**, including under-load impact (bufferbloat).
+2. **Pick the best route/egress/target** when you have multiple options, using per-target results plus a **Scorecard**.
+
+Works on **macOS**, **Linux**, **OpenWrt**, and most Unix-like systems.
 
 ![alt network-testing-shell-script](https://github.com/russellgrapes/ifspeedtest-cli/blob/main/placeholder.png)
+
+Need public iperf3 endpoints? See: [https://github.com/R0GGER/public-iperf3-servers](https://github.com/R0GGER/public-iperf3-servers)
 
 ---
 
@@ -250,14 +256,11 @@ opkg install bind-dig   # or: opkg install bind-host
 * iperf3 can saturate links (especially with high `-P`). Don’t run this on production links without knowing the impact.
 
 ---
-
 ## Contributing
 
-Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+⭐ Star this repo if it helps.
 
-If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
-
-Don't forget to give the project a star! Thanks again!
+Then fork it and open a pull request, or create an issue tagged **enhancement**.
 
 ## License
 
