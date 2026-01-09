@@ -1,112 +1,254 @@
-![alt network-testing-bash-script](https://github.com/russellgrapes/bash-ifspeedtest/blob/main/placeholder.png)
+# ifspeedtest.sh — link quality + throughput tester (iperf3 + mtr)
 
-# Network Testing Bash Script
+A cross-platform (portable) `/bin/sh` script to compare **real-world network quality**, not just raw “speed”.  
+It runs **iperf3** (upload + download) and **mtr** (latency/loss/jitter/hops), then prints per-target results plus a **Scorecard** so you can quickly pick the best route/egress/target.
 
-A versatile bash script designed for fast comparison of main network parameters across multiple IPs. It is useful when you need to choose a faster or better bandwidth route between your servers around the network.
+Works on **macOS**, **Linux**, **OpenWrt**, and most Unix-like systems with the required tools installed.
+
+![alt network-testing-shell-script](https://github.com/russellgrapes/bash-ifspeedtest/blob/main/placeholder.png)
+
+---
+
+## What it measures
+
+- **Throughput**: iperf3 upload + download (reverse mode)
+- **Latency / Loss / Jitter / Hops**: mtr (ICMP/UDP/TCP probes)
+- **Under-load quality** (bufferbloat indicator):
+  - ping + jitter while iperf is running
+  - **ΔPing** and **ΔJitter** vs idle baseline
+
+---
 
 ## Features
 
-- **MTR Tests**: Runs `mtr` tests to measure packet loss and latency.
-- **Iperf3 Tests**: Runs `iperf3` tests to measure upload and download speeds.
-- **Comparison Results**: Compares all parameters and shows the best result.
-- **Logging**: Saves test results to log files with customizable log directory.
-- **Flexible Configuration**: Allows customization of test parameters through command-line options.
+- **IPv4 + IPv6**
+  - test IPv4 / IPv6 literals directly
+  - test domains with `--ipv4` / `--ipv6` (A/AAAA)
+- **Port spec for iperf3**: single port, **ranges**, or comma lists  
+  Example: `-p 5201-5210` or `-p 5201,5203,5205-5207`  
+  The script will **fallback** across ports until it gets a valid result and will report which port was used.
+- **Multiple targets** via `--ips <file>`
+  - one per line
+  - supports inline `# notes` that show up in output and Scorecard
+- **Multiple egress interfaces**
+  - `-I eth0 -I eth1` or `-I "eth0,eth1"`
+  - if multiple interfaces are set, each target is tested across **all** of them
+- **Scorecard** (when testing more than 1 target)
+  - best upload, best download, best ping, minimum hops (ties supported)
+- **Logging**: `--log [dir]` writes a single consolidated log
+- **Optional auto-install**: `--install-missing` (brew/apt/yum/dnf/pacman/opkg where available)
+
+---
+
+## Quick start
+
+### 1) Download
+
+```sh
+curl -O https://raw.githubusercontent.com/russellgrapes/bash-ifspeedtest/main/ifspeedtest.sh
+chmod +x ifspeedtest.sh
+````
+
+### 2) Run
+
+If you don’t specify `--mtr` or `--iperf3`, it runs **both** by default.
+
+```sh
+./ifspeedtest.sh -i 1.1.1.1
+./ifspeedtest.sh -i 2606:4700:4700::1111
+./ifspeedtest.sh -i example.com --mtr --iperf3 30
+```
+
+---
 
 ## Usage
 
-The `ifspeedtest.sh` script offers various command-line options for running network tests:
-
-```bash
+```sh
 ./ifspeedtest.sh [options]
 ```
 
 ### Options
 
-- `-i, --ip <IP>`: Specifies the IP to test.
-- `--ips <file>`: Specifies the file with IPs to test.
-- `--mtr [count]`: Run `mtr` test. Optionally specify the number of pings to send (default: 10).
-- `--iperf3 [time]`: Run `iperf3` test. Optionally specify the duration in seconds (default: 10).
-- `-I <interface>`: Specifies which interface to use for the test.
-- `--log [directory]`: Save log in the specified directory (default: current working directory).
-- `-h, --help`: Show this help message and exit.
+* `-i, --ip <IPv4|IPv6|domain>`: target to test
+* `--ips <file>`: file with targets (one per line; supports `# comments`)
+* `--ipv4`: for domain targets, resolve/use IPv4 only (A)
+* `--ipv6`: for domain targets, resolve/use IPv6 only (AAAA)
+* `-I <iface>[,<iface>...]`: egress interface/device to use (repeatable)
+* `--mtr [count]`: run mtr (default: `MTR_COUNT` or 10)
+* `--iperf3 [time]`: run iperf3 (default: `IPERF3_TIME` or 10 seconds)
+* `-P, --iperf3-parallel <n>`: iperf3 parallel streams (default: `IPERF3_PARALLEL` or 10)
+* `-p, --iperf3-port <spec>`: iperf3 server port or range/list
+  Examples: `5201`, `5201-5210`, `5201,5202-5204`
+* `--mtr-probe <icmp|udp|tcp>`: mtr probe type (default: `icmp`)
+* `--mtr-port <port>`: destination port for `tcp`/`udp` probes
+* `--mtr-interval <seconds>`: seconds between probes (default: `1`)
+* `--log [directory]`: write a log file (default: OS-specific; OpenWrt uses `/tmp`)
+* `--install-missing`: attempt to install missing tools
+* `--sudo`: force sudo for mtr (prompt once up front where supported)
+* `--no-sudo`: never use sudo for mtr (mtr may be skipped if it needs privileges)
+* `-h, --help`: help
 
-Global Variables:
-- `IPERF3_PARALLEL`: Number of parallel streams to use in iperf3 test (default: 10).
+---
 
-### Examples
+## Examples
 
-```bash
+Single target (defaults: mtr + iperf3):
+
+```sh
 ./ifspeedtest.sh -i 10.1.1.1
-./ifspeedtest.sh --ips ips.ini --mtr 30 --iperf3 30 --log /home/logs/ -I eth0
 ```
 
-### ips.ini File
+Domain + force IPv6 + longer tests:
 
-The `ips.ini` file should contain a list of IP addresses, each on a new line. The script will run tests on each IP listed in this file.
-
-Example `ips.ini` file:
-
-```bash
-10.1.1.1
-10.1.1.2
-10.1.1.3
+```sh
+./ifspeedtest.sh -i example.com --ipv6 --mtr 30 --iperf3 30
 ```
 
-## Configuration
+Test the same target across two egress interfaces:
 
-The script allows customization of test parameters through global variables and command-line options.
+```sh
+./ifspeedtest.sh -i example.com -I "enp0s3,enp0s8" --mtr --iperf3 20
+```
 
-### Global Variables
+Use iperf3 port range fallback:
 
-- `MTR_COUNT`: Default number of pings to send in `mtr` test (default: 10).
-- `IPERF3_TIME`: Default duration in seconds for each `iperf3` test (default: 10).
-- `IPERF3_PARALLEL`: Number of parallel streams to use in `iperf3` test (default: 10).
-- `CONNECT_TIMEOUT`: Timeout in milliseconds for `iperf3` connection attempts (default: 5000).
-- `LOG_DIR`: Directory to save log files (default: current working directory).
+```sh
+./ifspeedtest.sh -i iperf.example.com --iperf3 20 -p 5201-5210
+```
+
+Targets from file + notes + logs:
+
+```sh
+./ifspeedtest.sh --ips ips.txt --mtr 30 --iperf3 30 --log ./logs
+```
+
+---
+
+## `--ips` file format (with inline notes)
+
+* One target per line: IPv4, IPv6, or domain
+* Empty lines ignored
+* Lines starting with `#` ignored
+* Inline notes after `#` are preserved and shown in the output + Scorecard
+
+Example `ips.txt`:
+
+```txt
+1.1.1.1              # route A (ISP1)
+2606:4700:4700::1111 # route A (IPv6)
+example.com          # route B (ISP2)
+9.9.9.9
+```
+
+---
+
+## iperf3 server requirements
+
+This script is a **client**. Your targets must have an iperf3 server reachable.
+
+Default server (port 5201):
+
+```sh
+iperf3 -s
+```
+
+Custom port (must match `-p` on the client):
+
+```sh
+iperf3 -s -p 5202
+```
+
+If you use a **port range/list** on the client, you need servers/listeners available on those ports (or a load balancer / port-forwarding that makes them work).
+
+---
+
+## Configuration (environment variables)
+
+All defaults can be overridden with env vars:
+
+* `MTR_COUNT` (default 10)
+* `MTR_PROBE` (`icmp|udp|tcp`, default `icmp`)
+* `MTR_INTERVAL` (default 1)
+* `MTR_LOAD_COUNT` (optional; probes during iperf load; if unset it auto-derives from iperf time)
+* `MTR_PORT` (for tcp/udp probes; tcp defaults to 443 if unset)
+* `IPERF3_TIME` (default 10)
+* `IPERF3_PARALLEL` (default 10)
+* `IPERF3_PORTS` (same format as `--iperf3-port`)
+* `CONNECT_TIMEOUT` (ms; only used if your iperf3 supports `--connect-timeout`)
+* `ADDR_FAMILY` (`auto|4|6`; affects domain resolution only)
+* `NO_COLOR=1` disables colored output
+
+Example:
+
+```sh
+NO_COLOR=1 ./ifspeedtest.sh -i example.com
+```
+
+---
 
 ## Installation
 
-Follow these steps to install and set up the `ifspeedtest.sh` script on your server.
+You can install dependencies manually, or run with `--install-missing` and let the script try.
 
-### Install Required Packages
+### macOS (Homebrew)
 
-Install the main required packages:
-
-```bash
-sudo apt-get install mtr iperf3 libxml2-utils gawk bc
+```sh
+brew install mtr iperf3
+# if you test domains and don’t already have dig/host/nslookup:
+brew install bind
 ```
 
-Or for CentOS:
+### Debian / Ubuntu
 
-```bash
-sudo yum install mtr iperf3 libxml2 gawk bc
+```sh
+sudo apt update
+sudo apt install -y iperf3 mtr-tiny dnsutils
+# optional (enables XML parsing when supported by your mtr):
+sudo apt install -y libxml2-utils
 ```
 
-### Download Script
+### RHEL / CentOS / Fedora
 
-Download the script directly using `curl`:
-
-```bash
-curl -O https://raw.githubusercontent.com/russellgrapes/bash-ifspeedtest/main/ifspeedtest.sh
+```sh
+sudo dnf install -y iperf3 mtr bind-utils
+# optional:
+sudo dnf install -y libxml2
 ```
 
-### Make the Script Executable
+### Arch
 
-Change the script's permissions to make it executable:
-
-```bash
-chmod +x ifspeedtest.sh
+```sh
+sudo pacman -S --needed iperf3 mtr bind libxml2
 ```
 
-### Running the Script
+### Alpine
 
-Run the script with the desired options:
-
-```bash
-./ifspeedtest.sh -i 10.1.1.1
+```sh
+sudo apk add iperf3 mtr bind-tools libxml2-utils
 ```
 
-The script will check for required dependencies and prompt to install any that are missing.
+### OpenWrt
+
+```sh
+opkg update
+opkg install iperf3 mtr
+# if you test domains and BusyBox nslookup isn’t available/usable:
+opkg install bind-dig   # or: opkg install bind-host
+```
+
+---
+
+## Notes / troubleshooting
+
+* **mtr on macOS often needs sudo** for ICMP. Use `--sudo`, or switch to TCP probes:
+
+  ```sh
+  ./ifspeedtest.sh -i example.com --mtr --mtr-probe tcp --mtr-port 443
+  ```
+* If a network blocks ICMP, try `--mtr-probe tcp` or `udp`.
+* iperf3 can saturate links (especially with high `-P`). Don’t run this on production links without knowing the impact.
+
+---
 
 ## Contributing
 
