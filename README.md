@@ -1,4 +1,5 @@
-# ifspeedtest.sh — link quality + throughput tester (iperf3 + mtr)
+# Network Testing Bash Script
+## ifspeedtest.sh — link quality + throughput tester (iperf3 + mtr)
 
 A cross-platform (portable) `/bin/sh` script to compare **real-world network quality**, not just raw “speed”.  
 It runs **iperf3** (upload + download) and **mtr** (latency/loss/jitter/hops), then prints per-target results plus a **Scorecard** so you can quickly pick the best route/egress/target.
