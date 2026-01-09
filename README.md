@@ -6,7 +6,7 @@ It runs **iperf3** (upload + download) and **mtr** (latency/loss/jitter/hops), t
 
 Works on **macOS**, **Linux**, **OpenWrt**, and most Unix-like systems with the required tools installed.
 
-![alt network-testing-shell-script](https://github.com/russellgrapes/bash-ifspeedtest/blob/main/placeholder.png)
+![alt network-testing-shell-script](https://github.com/russellgrapes/ifspeedtest-cli/blob/main/placeholder.png)
 
 ---
 
@@ -46,7 +46,7 @@ Works on **macOS**, **Linux**, **OpenWrt**, and most Unix-like systems with the 
 ### 1) Download
 
 ```sh
-curl -O https://raw.githubusercontent.com/russellgrapes/bash-ifspeedtest/main/ifspeedtest.sh
+curl -O https://raw.githubusercontent.com/russellgrapes/ifspeedtest-cli/main/ifspeedtest.sh
 chmod +x ifspeedtest.sh
 ````
 
@@ -269,4 +269,4 @@ I write loops to skip out on life's hoops.
 
 Russell Grapes - [www.grapes.team](https://grapes.team)
 
-Project Link: [https://github.com/russellgrapes/bash-ifspeedtest](https://github.com/russellgrapes/bash-ifspeedtest)
+Project Link: [https://github.com/russellgrapes/bash-ifspeedtest](https://github.com/russellgrapes/ifspeedtest-cli)
